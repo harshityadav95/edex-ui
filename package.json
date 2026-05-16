@@ -79,7 +79,9 @@
         }
       ],
       "category": "public.app-category.utilities",
-      "icon": "media/icon.icns"
+      "icon": "media/icon.icns",
+      "identity": null,
+      "x64ArchFiles": "**/node_modules/{@napi-rs/canvas-darwin-*,node-pty/prebuilds/darwin-*}/**/*"
     },
     "dmg": {
       "artifactName": "eDEX-UI-macOS-universal.dmg"

@@ -144,8 +144,8 @@ class Netstat {
 
                 this.offline = offline;
                 if (offline) {
-                    document.querySelector("#mod_netstat_innercontainer > div:first-child > h2").innerHTML = "OFFLINE";
-                    document.querySelector("#mod_netstat_innercontainer > div:nth-child(2) > h2").innerHTML = "--.--.--.--";
+                    document.querySelector("#mod_netstat_innercontainer > div:first-child > h2").innerHTML = "LOCAL";
+                    document.querySelector("#mod_netstat_innercontainer > div:nth-child(2) > h2").innerHTML = net.ip4;
                     document.querySelector("#mod_netstat_innercontainer > div:nth-child(3) > h2").innerHTML = "--ms";
                 } else {
                     document.querySelector("#mod_netstat_innercontainer > div:first-child > h2").innerHTML = "ONLINE";
