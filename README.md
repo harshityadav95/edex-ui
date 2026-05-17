@@ -135,6 +135,14 @@ Note: Due to native modules, you can only build targets for the host OS you are 
 
 The script will minify the source code, recompile native dependencies and create distributable assets in the `dist` folder.
 
+`build-darwin` intentionally creates an unsigned local DMG. A macOS DMG downloaded from GitHub Actions must be Developer ID signed and notarized or Gatekeeper can report the installed app as damaged/corrupted. The CI macOS jobs use `build-darwin-signed` / `build-darwin-arm64-signed` and require these repository secrets:
+
+- `MACOS_CSC_LINK`: base64-encoded Developer ID Application `.p12` certificate.
+- `MACOS_CSC_KEY_PASSWORD`: password for the `.p12` certificate.
+- `APPLE_ID`: Apple ID used for notarization.
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
+- `APPLE_TEAM_ID`: Apple Developer Team ID.
+
 #### Getting the bleeding edge
 If you're interested in running the latest in-development version but don't want to compile source code yourself, you can can get pre-built nightly binaries on [GitHub Actions](https://github.com/GitSquared/edex-ui/actions): click the latest commits, and download the artifacts bundle for your OS.
 

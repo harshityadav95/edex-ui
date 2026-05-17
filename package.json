@@ -27,8 +27,10 @@
     "prebuild-darwin-arm64": "npm run prebuild-darwin",
     "prebuild-windows": "mkdir prebuild-src && xcopy src\\* prebuild-src\\ /E /C /Q /Y && node prebuild-minify.js && cd prebuild-src && npm install",
     "build-linux": "./node_modules/.bin/electron-builder build -l --x64 --arm64",
-    "build-darwin": "./node_modules/.bin/electron-builder build -m --universal",
-    "build-darwin-arm64": "./node_modules/.bin/electron-builder build -m --arm64",
+    "build-darwin": "./node_modules/.bin/electron-builder build -m --universal -c.mac.identity=null -c.forceCodeSigning=false",
+    "build-darwin-signed": "./node_modules/.bin/electron-builder build -m --universal -c.forceCodeSigning=true",
+    "build-darwin-arm64": "./node_modules/.bin/electron-builder build -m --arm64 -c.mac.identity=null -c.forceCodeSigning=false",
+    "build-darwin-arm64-signed": "./node_modules/.bin/electron-builder build -m --arm64 -c.forceCodeSigning=true",
     "build-windows": "node_modules\\.bin\\electron-builder build -w",
     "postbuild-linux": "rm -R prebuild-src",
     "postbuild-darwin": "rm -R prebuild-src",
@@ -82,7 +84,6 @@
       ],
       "category": "public.app-category.utilities",
       "icon": "media/icon.icns",
-      "identity": null,
       "x64ArchFiles": "**/node_modules/{@napi-rs/canvas-darwin-*,node-pty/prebuilds/darwin-*}/**/*"
     },
     "dmg": {
