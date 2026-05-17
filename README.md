@@ -41,13 +41,6 @@ It might or might not be a joke taken too seriously.
   <em>Jump to: <br><a href="#features">Features</a> — <a href="#screenshots">Screenshots</a> — <a href="#qa">Questions & Answers</a> — <strong><a href="#how-do-i-get-it">Download</a></strong> — <a href="#featured-in">Featured In</a> — <a href="#useful-commands-for-the-nerds">Contributor Instructions</a> — <a href="#credits">Credits</a></em>
 </p>
 
-## Sponsor
-
-**Want to help support my open-source experiments and learn some cool JavaScript tricks at the same time?**
-
-Click the banner below and sign up to **Bytes**, the only newsletter cool enough to be recommended by eDEX-UI.
-
-[![Bytes by UI.dev](media/sponsor-uidev-bytes.jpg)](https://ui.dev/bytes/?r=gabriel)
 
 ## Features
 - Fully featured terminal emulator with tabs, colors, mouse events, and support for `curses` and `curses`-like applications.
