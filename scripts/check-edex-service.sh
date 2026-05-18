@@ -12,6 +12,7 @@ fi
 : "${EDEX_VNC_PORT:=5901}"
 : "${EDEX_DISPLAY:=:1}"
 : "${EDEX_DISPLAY_BACKEND:=auto}"
+: "${EDEX_PUBLIC_HOSTNAME:=}"
 
 section() {
     printf '\n== %s ==\n' "$*"
@@ -27,6 +28,15 @@ printf 'Display backend: %s\n' "$EDEX_DISPLAY_BACKEND"
 printf 'LAN URL: https://%s:%s/\n' "$(container_ip)" "$EDEX_WEB_PORT"
 printf 'noVNC/Kasm web backend: 127.0.0.1:%s\n' "$EDEX_NOVNC_PORT"
 printf 'VNC backend: 127.0.0.1:%s\n' "$EDEX_VNC_PORT"
+if [[ -n "$EDEX_PUBLIC_HOSTNAME" ]]; then
+    printf 'Cloudflare hostname: %s\n' "$EDEX_PUBLIC_HOSTNAME"
+fi
+
+if command -v print-edex-access-urls.sh >/dev/null 2>&1; then
+    print-edex-access-urls.sh "$ENV_FILE"
+elif [[ -x "$(dirname "${BASH_SOURCE[0]}")/print-edex-access-urls.sh" ]]; then
+    "$(dirname "${BASH_SOURCE[0]}")/print-edex-access-urls.sh" "$ENV_FILE"
+fi
 
 section "GPU"
 if compgen -G '/dev/dri/renderD*' >/dev/null; then
@@ -44,7 +54,8 @@ fi
 
 section "Listeners"
 if command -v ss >/dev/null 2>&1; then
-    ss -ltnp | awk 'NR == 1 || /:8443|:6080|:5901|:3000|:3001|:3002|:3003|:3004|:3005|:3006/'
+    ss -ltnp | awk -v web=":${EDEX_WEB_PORT}" -v novnc=":${EDEX_NOVNC_PORT}" -v vnc=":${EDEX_VNC_PORT}" \
+        'NR == 1 || index($0, web) || index($0, novnc) || index($0, vnc) || /:3000|:3001|:3002|:3003|:3004|:3005|:3006/'
 else
     printf 'ss is not available.\n'
 fi
@@ -58,4 +69,3 @@ if command -v journalctl >/dev/null 2>&1; then
 else
     printf 'journalctl is not available.\n'
 fi
-

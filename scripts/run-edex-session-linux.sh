@@ -28,11 +28,11 @@ load_defaults() {
     : "${EDEX_RESOLUTION:=1600x900}"
     : "${EDEX_DEPTH:=24}"
     : "${EDEX_DISPLAY_BACKEND:=auto}"
-    : "${EDEX_VNC_STACK:=auto}"
+    : "${EDEX_VNC_STACK:=novnc}"
     : "${EDEX_VNC_PORT:=5901}"
     : "${EDEX_NOVNC_HOST:=127.0.0.1}"
     : "${EDEX_NOVNC_PORT:=6080}"
-    : "${EDEX_ELECTRON_FLAGS:=--nointro --no-sandbox}"
+    : "${EDEX_ELECTRON_FLAGS:=--no-sandbox}"
     : "${EDEX_DISABLE_AUDIO:=false}"
     : "${EDEX_THEME:=tron}"
 }

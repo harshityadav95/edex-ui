@@ -8,14 +8,15 @@ This document describes the supported LAN service architecture for eDEX-UI on De
 - systemd service manager.
 - LXD/LXC, Proxmox LXC, VM, or bare-metal Linux.
 - Source build with `npm run install-linux`.
-- Browser access at `https://<server-ip>:8443/`.
+- Browser access at `https://<server-ip>:8443/vnc.html?autoconnect=1&resize=remote&path=websockify`.
+- Optional Cloudflare Tunnel access by forwarding local Nginx HTTPS to a public hostname.
 
 The AppImage path is intentionally not used for this service deployment.
 
 ## Runtime Architecture
 
 ```text
-LAN browser
+LAN browser or Cloudflare hostname
   -> Nginx HTTPS Basic Auth on 8443
       -> noVNC/Kasm browser backend on 127.0.0.1:6080
           -> VNC server on 127.0.0.1:5901
@@ -25,7 +26,7 @@ LAN browser
                           -> internal terminal WebSockets on 127.0.0.1:3000-3006
 ```
 
-Only Nginx is exposed to the LAN. VNC, noVNC, and eDEX terminal WebSocket ports stay private to the Linux host/container.
+Only Nginx is exposed to the LAN or Cloudflare Tunnel. VNC, noVNC, and eDEX terminal WebSocket ports stay private to the Linux host/container.
 
 ## Service Model
 
@@ -38,7 +39,8 @@ The unit runs:
 - a virtual display, either Xorg dummy or Xvfb;
 - Openbox;
 - eDEX-UI from `/opt/edex-ui`;
-- KasmVNC when installed and configured, otherwise the x11vnc/noVNC fallback.
+- x11vnc/noVNC by default.
+- KasmVNC only when explicitly selected and configured.
 
 The service uses:
 
@@ -68,7 +70,7 @@ Recommended choices:
 LAN-facing endpoint:
 
 ```text
-https://<server-ip>:8443/
+https://<server-ip>:8443/vnc.html?autoconnect=1&resize=remote&path=websockify
 ```
 
 Credentials are stored in:
@@ -91,7 +93,19 @@ Ports that must not be exposed to the LAN:
 6080/tcp       noVNC/Kasm backend
 ```
 
-For internet access, place the service behind a VPN or identity-aware gateway. Do not forward `8443` directly to the public internet.
+For internet access, place the service behind a VPN or identity-aware gateway. Cloudflare Tunnel TCP origins should use the LAN IP and port:
+
+```text
+tcp://<server-ip>:8443
+```
+
+Cloudflare browser URL:
+
+```text
+https://<cloudflare-hostname>/vnc.html?autoconnect=1&resize=remote&path=websockify
+```
+
+Use `tcp://<server-ip>:5901` only for raw VNC client access. Do not forward `8443` directly to the public internet.
 
 ## Installation Flow
 
@@ -108,6 +122,7 @@ The installer performs these actions:
 - copies the source tree to `/opt/edex-ui`;
 - runs `npm run install-linux`;
 - installs the systemd unit, runner, checker, and Nginx config;
+- renders Nginx from `/etc/edex-ui/edex.env`;
 - creates the Nginx password file;
 - enables and starts `edex.service` and `nginx`.
 
@@ -127,3 +142,8 @@ Expected:
 - eDEX terminal WebSocket ports bind to `127.0.0.1`.
 - Browser access prompts for username/password and displays eDEX-UI.
 
+Repo-local deployment contract tests:
+
+```bash
+npm run test:linux-service
+```

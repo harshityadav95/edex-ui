@@ -1,6 +1,6 @@
 # eDEX-UI Debian/Ubuntu Service Setup
 
-This is the primary runbook for running eDEX-UI as a Linux service and opening it from a LAN browser with username/password authentication.
+This is the primary runbook for running eDEX-UI as a Linux service and opening it from a LAN browser with username/password authentication. It also covers forwarding the same browser-rendered noVNC endpoint through Cloudflare Tunnel.
 
 eDEX-UI is an Electron desktop application. This setup runs it on a virtual Linux display, streams that display through VNC/noVNC, and exposes a single authenticated Nginx HTTPS endpoint. It does not use AppImage.
 
@@ -55,7 +55,8 @@ Proxmox LXC notes:
 VM or bare-metal notes:
 
 - Use the same installer.
-- Open only port `8443/tcp` in the firewall.
+- Open only port `8443/tcp` in the firewall for LAN use.
+- For Cloudflare Tunnel use, no inbound port is required; `cloudflared` connects outbound to Cloudflare and forwards to local Nginx.
 
 ## 3. Clone The Repo
 
@@ -106,10 +107,16 @@ hostname -I
 Open:
 
 ```text
-https://<server-ip>:8443/
+https://<server-ip>:8443/vnc.html?autoconnect=1&resize=remote&path=websockify
 ```
 
 Accept the local certificate warning, then log in with the configured username/password.
+
+The installer and checker also print the exact URLs:
+
+```bash
+sudo check-edex-service.sh
+```
 
 ## 6. Manage The Service
 
@@ -152,9 +159,9 @@ Common settings:
 EDEX_RESOLUTION=1600x900
 EDEX_DEPTH=24
 EDEX_DISPLAY_BACKEND=auto
-EDEX_VNC_STACK=auto
+EDEX_VNC_STACK=novnc
 EDEX_WEB_PORT=8443
-EDEX_ELECTRON_FLAGS=--nointro --no-sandbox
+EDEX_ELECTRON_FLAGS="--no-sandbox"
 ```
 
 Display backend choices:
@@ -165,17 +172,50 @@ Display backend choices:
 
 VNC stack choices:
 
+- `EDEX_VNC_STACK=novnc`: use x11vnc plus noVNC. This is the default Debian/Ubuntu service profile.
 - `EDEX_VNC_STACK=auto`: prefer KasmVNC if configured, otherwise noVNC fallback.
-- `EDEX_VNC_STACK=novnc`: use x11vnc plus noVNC.
 - `EDEX_VNC_STACK=kasm`: require KasmVNC.
 
 Apply changes:
 
 ```bash
 sudo systemctl restart edex.service
+sudo render-edex-nginx-config.sh
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
-## 8. Network Security
+If you installed from a different source path, run `render-edex-nginx-config.sh` with that repo's `deploy/linux/nginx-edex.conf` template as the first argument.
+
+## 8. Cloudflare Tunnel
+
+Cloudflare Tunnel TCP origins should use the LAN IP and port form:
+
+```text
+tcp://<server-ip>:<port>
+```
+
+For browser-rendered noVNC, use the Nginx web port:
+
+```text
+tcp://<server-ip>:8443
+```
+
+For a raw VNC client, use the VNC port only when you explicitly need direct VNC:
+
+```text
+tcp://<server-ip>:5901
+```
+
+After the noVNC tunnel is created, open the Cloudflare hostname with:
+
+```text
+https://<cloudflare-hostname>/vnc.html?autoconnect=1&resize=remote&path=websockify
+```
+
+Set `EDEX_PUBLIC_HOSTNAME=edex.example.com` in `/etc/edex-ui/edex.env` if you want `check-edex-service.sh` to print the final Cloudflare browser URL.
+
+## 9. Network Security
 
 Expose only:
 
@@ -195,7 +235,7 @@ The service binds internal eDEX terminal WebSockets to `127.0.0.1`. The VNC/noVN
 
 For remote access outside the LAN, use a VPN or identity-aware gateway rather than direct public port forwarding.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 If the browser opens but eDEX does not appear:
 
@@ -210,10 +250,22 @@ sudo nginx -t
 sudo systemctl status nginx
 ```
 
+If the Cloudflare hostname opens but the VNC canvas does not connect, confirm that the URL includes:
+
+```text
+path=websockify
+```
+
+Then check:
+
+```bash
+sudo check-edex-service.sh
+```
+
 If Electron reports sandbox errors inside an unprivileged container, keep:
 
 ```bash
-EDEX_ELECTRON_FLAGS=--nointro --no-sandbox
+EDEX_ELECTRON_FLAGS="--no-sandbox"
 ```
 
 If performance is poor:
@@ -222,4 +274,3 @@ If performance is poor:
 - disable audio with `EDEX_DISABLE_AUDIO=true`;
 - pass through `/dev/dri/renderD128` if available;
 - compare results with `sudo check-edex-service.sh`.
-

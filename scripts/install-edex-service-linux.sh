@@ -20,6 +20,21 @@ apt_install() {
     apt-get install -y "$@"
 }
 
+apt_has_candidate() {
+    local package="$1"
+    [[ "$(apt-cache policy "$package" 2>/dev/null | awk '/Candidate:/ { print $2; exit }')" != "(none)" ]]
+}
+
+alsa_runtime_package() {
+    if apt_has_candidate libasound2; then
+        printf 'libasound2'
+    elif apt_has_candidate libasound2t64; then
+        printf 'libasound2t64'
+    else
+        printf 'libasound2'
+    fi
+}
+
 install_node22_if_needed() {
     local major=0
     if command -v node >/dev/null 2>&1; then
@@ -66,7 +81,7 @@ install_app_source() {
 
 build_app() {
     log "building eDEX-UI from source"
-    sudo -u edex -H bash -lc 'cd /opt/edex-ui && npm run install-linux'
+    sudo -u edex -H bash -lc 'cd /opt/edex-ui && npm config set fetch-retries 5 && npm config set fetch-retry-mintimeout 20000 && npm config set fetch-retry-maxtimeout 120000 && npm config set fetch-timeout 300000 && npm run install-linux'
 }
 
 install_deployment_files() {
@@ -75,7 +90,12 @@ install_deployment_files() {
     install -m 0644 "$REPO_ROOT/deploy/linux/edex.service" /etc/systemd/system/edex.service
     install -m 0755 "$REPO_ROOT/scripts/run-edex-session-linux.sh" /usr/local/bin/run-edex-session-linux.sh
     install -m 0755 "$REPO_ROOT/scripts/check-edex-service.sh" /usr/local/bin/check-edex-service.sh
-    install -m 0644 "$REPO_ROOT/deploy/linux/nginx-edex.conf" /etc/nginx/sites-available/edex-ui
+    install -m 0755 "$REPO_ROOT/scripts/render-edex-nginx-config.sh" /usr/local/bin/render-edex-nginx-config.sh
+    install -m 0755 "$REPO_ROOT/scripts/print-edex-access-urls.sh" /usr/local/bin/print-edex-access-urls.sh
+    /usr/local/bin/render-edex-nginx-config.sh \
+        "$REPO_ROOT/deploy/linux/nginx-edex.conf" \
+        /etc/nginx/sites-available/edex-ui \
+        /etc/edex-ui/edex.env
 
     ln -sfn /etc/nginx/sites-available/edex-ui /etc/nginx/sites-enabled/edex-ui
     rm -f /etc/nginx/sites-enabled/default
@@ -84,6 +104,7 @@ install_deployment_files() {
 create_web_credentials() {
     local user="${EDEX_WEB_USER:-edex}"
     local password="${EDEX_WEB_PASSWORD:-}"
+    local htpasswd_file="${EDEX_HTPASSWD_FILE:-/etc/nginx/edex.htpasswd}"
 
     if [[ -z "$password" && -t 0 ]]; then
         read -r -s -p "Password for web user '${user}': " password
@@ -95,27 +116,31 @@ create_web_credentials() {
         log "generated web password for ${user}: ${password}"
     fi
 
-    htpasswd -Bbc /etc/nginx/edex.htpasswd "$user" "$password"
-    chmod 0640 /etc/nginx/edex.htpasswd
-    chown root:www-data /etc/nginx/edex.htpasswd
+    install -d -m 0755 "$(dirname "$htpasswd_file")"
+    htpasswd -Bbc "$htpasswd_file" "$user" "$password"
+    chmod 0640 "$htpasswd_file"
+    chown root:www-data "$htpasswd_file"
 }
 
 enable_services() {
     log "validating nginx and enabling services"
     nginx -t
     systemctl daemon-reload
-    systemctl enable --now nginx
+    systemctl enable nginx
+    systemctl reload-or-restart nginx
     systemctl enable --now edex.service
 }
 
 main() {
     need_root
+    local alsa_package
+    alsa_package="$(alsa_runtime_package)"
     apt_install \
         ca-certificates curl gnupg git rsync sudo openssl \
         build-essential python3 make g++ pkg-config \
         xserver-xorg-core xserver-xorg-video-dummy xvfb openbox dbus-x11 \
         x11vnc novnc websockify nginx apache2-utils ssl-cert \
-        libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libgbm1 \
+        "$alsa_package" libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libgbm1 \
         libgtk-3-0 libnss3 libx11-xcb1 libxcomposite1 libxcursor1 \
         libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 \
         libxshmfence1 libxss1 libxtst6
@@ -124,10 +149,12 @@ main() {
     install_app_source
     build_app
     install_deployment_files
+    # shellcheck disable=SC1091
+    source /etc/edex-ui/edex.env
     create_web_credentials
     enable_services
-    log "done. Open https://<container-ip>:8443/"
+    /usr/local/bin/print-edex-access-urls.sh /etc/edex-ui/edex.env || true
+    log "done"
 }
 
 main "$@"
-
