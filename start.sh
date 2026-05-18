@@ -22,72 +22,61 @@ need_root_or_reexec() {
     exec sudo -E bash "$0" "$@"
 }
 
-container_ips() {
-    if command -v ip >/dev/null 2>&1; then
-        ip -4 addr show scope global 2>/dev/null |
-            awk '/inet / { sub(/\/.*/, "", $2); print $2 }'
-        return
-    fi
-
-    hostname -I 2>/dev/null | awk '{ for (i = 1; i <= NF; i++) print $i }'
-}
-
-first_container_ip() {
-    local ip_addr
-    while IFS= read -r ip_addr; do
-        [[ -n "$ip_addr" ]] || continue
-        printf '%s' "$ip_addr"
-        return
-    done < <(container_ips)
-}
-
 print_urls() {
+    if command -v print-edex-access-urls.sh >/dev/null 2>&1; then
+        print-edex-access-urls.sh "$ENV_FILE"
+    elif [[ -x "$REPO_ROOT/scripts/print-edex-access-urls.sh" ]]; then
+        "$REPO_ROOT/scripts/print-edex-access-urls.sh" "$ENV_FILE"
+    else
+        printf 'Missing URL helper: print-edex-access-urls.sh\n' >&2
+    fi
+}
+
+print_cloudflare_tunnel_details() {
     if [[ -f "$ENV_FILE" ]]; then
         # shellcheck disable=SC1090
         source "$ENV_FILE"
     fi
 
     : "${EDEX_WEB_PORT:=8443}"
-    : "${EDEX_VNC_PORT:=5901}"
+    : "${EDEX_CLOUDFLARE_ORIGIN_HOST:=10.1.1.117}"
+    : "${EDEX_PUBLIC_HOSTNAME:=<cloudflare-hostname>}"
 
-    local novnc_path="/vnc.html?autoconnect=1&resize=remote&path=websockify"
-    local cloudflare_ip
-    cloudflare_ip="$(first_container_ip)"
-    cloudflare_ip="${cloudflare_ip:-<server-ip>}"
+    local origin="https://${EDEX_CLOUDFLARE_ORIGIN_HOST}:${EDEX_WEB_PORT}"
+    local public_host="$EDEX_PUBLIC_HOSTNAME"
+    public_host="${public_host#http://}"
+    public_host="${public_host#https://}"
+    public_host="${public_host%%/*}"
+    [[ -n "$public_host" ]] || public_host="<cloudflare-hostname>"
 
+    printf '\n== Cloudflare Tunnel Setup ==\n'
+    printf 'Your working local browser URL:\n'
+    printf '  %s/vnc.html?autoconnect=1&resize=remote&path=websockify\n' "$origin"
     printf '\n'
-    printf 'eDEX-UI is starting as systemd service: edex.service\n'
+    printf 'Use this as the Cloudflare Tunnel origin service, without the /vnc.html path:\n'
+    printf '  %s\n' "$origin"
     printf '\n'
-    printf 'Cloudflare accepted TCP origins:\n'
-    printf '  Cloudflare noVNC: tcp://%s:%s\n' "$cloudflare_ip" "$EDEX_WEB_PORT"
-    printf '  Cloudflare VNC  : tcp://%s:%s\n' "$cloudflare_ip" "$EDEX_VNC_PORT"
+    printf 'Cloudflare Zero Trust dashboard values:\n'
+    printf '  Public hostname: %s\n' "$public_host"
+    printf '  Service type   : HTTPS\n'
+    printf '  Service URL    : %s:%s\n' "$EDEX_CLOUDFLARE_ORIGIN_HOST" "$EDEX_WEB_PORT"
+    printf '  TLS setting    : No TLS Verify / Disable TLS verification = ON\n'
     printf '\n'
-    printf 'Cloudflare browser path after tunnel is created:\n'
-    printf '  https://<cloudflare-hostname>%s\n' "$novnc_path"
+    printf 'Equivalent cloudflared config.yml ingress:\n'
+    cat <<EOF
+ingress:
+  - hostname: ${public_host}
+    service: ${origin}
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404
+EOF
     printf '\n'
-    printf 'LAN noVNC browser URLs:\n'
-
-    local found_ip=0 ip_addr
-    while IFS= read -r ip_addr; do
-        [[ -n "$ip_addr" ]] || continue
-        found_ip=1
-        printf '  Browser: https://%s:%s%s\n' "$ip_addr" "$EDEX_WEB_PORT" "$novnc_path"
-        printf '  Cloudflare: tcp://%s:%s\n' "$ip_addr" "$EDEX_WEB_PORT"
-    done < <(container_ips)
-
-    if [[ "$found_ip" -eq 0 ]]; then
-        printf '  Browser: https://<server-ip>:%s%s\n' "$EDEX_WEB_PORT" "$novnc_path"
-        printf '  Cloudflare: tcp://<server-ip>:%s\n' "$EDEX_WEB_PORT"
-    fi
-
+    printf 'Open this after the tunnel DNS route is active:\n'
+    printf '  https://%s/vnc.html?autoconnect=1&resize=remote&path=websockify\n' "$public_host"
     printf '\n'
-    printf 'Raw VNC client endpoint, local/private only:\n'
-    printf '  127.0.0.1:%s\n' "$EDEX_VNC_PORT"
-    printf '  Cloudflare: tcp://%s:%s\n' "$cloudflare_ip" "$EDEX_VNC_PORT"
-    printf '\n'
-    printf 'Status and diagnostics:\n'
-    printf '  sudo systemctl status edex.service nginx\n'
-    printf '  sudo check-edex-service.sh\n'
+    printf 'Do not use tcp:// for this browser noVNC page. tcp:// is only for raw VNC clients.\n'
+    printf 'Keep forwarding only HTTPS port %s; do not expose 5901, 6080, or 3000-3006 publicly.\n' "$EDEX_WEB_PORT"
 }
 
 main() {
@@ -112,6 +101,7 @@ main() {
     fi
 
     print_urls
+    print_cloudflare_tunnel_details
 }
 
 main "$@"

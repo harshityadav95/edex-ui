@@ -10,6 +10,7 @@ fi
 : "${EDEX_WEB_PORT:=8443}"
 : "${EDEX_NOVNC_PORT:=6080}"
 : "${EDEX_VNC_PORT:=5901}"
+: "${EDEX_RAW_VNC_HOST:=127.0.0.1}"
 : "${EDEX_DISPLAY:=:1}"
 : "${EDEX_DISPLAY_BACKEND:=auto}"
 : "${EDEX_PUBLIC_HOSTNAME:=}"
@@ -27,7 +28,7 @@ printf 'Display: %s\n' "$EDEX_DISPLAY"
 printf 'Display backend: %s\n' "$EDEX_DISPLAY_BACKEND"
 printf 'LAN URL: https://%s:%s/\n' "$(container_ip)" "$EDEX_WEB_PORT"
 printf 'noVNC/Kasm web backend: 127.0.0.1:%s\n' "$EDEX_NOVNC_PORT"
-printf 'VNC backend: 127.0.0.1:%s\n' "$EDEX_VNC_PORT"
+printf 'VNC backend: %s:%s\n' "$EDEX_RAW_VNC_HOST" "$EDEX_VNC_PORT"
 if [[ -n "$EDEX_PUBLIC_HOSTNAME" ]]; then
     printf 'Cloudflare hostname: %s\n' "$EDEX_PUBLIC_HOSTNAME"
 fi

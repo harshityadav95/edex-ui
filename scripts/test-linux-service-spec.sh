@@ -89,20 +89,38 @@ url_env="$tmpdir/url.env"
 cp deploy/linux/edex.env "$url_env"
 printf '\nEDEX_PUBLIC_HOSTNAME=edex.example.com\n' >> "$url_env"
 url_output="$(EDEX_ACCESS_IPS='192.0.2.10' bash scripts/print-edex-access-urls.sh "$url_env")"
-assert_output_contains "$url_output" 'LAN noVNC URL : https://192\.0\.2\.10:8443/vnc\.html\?autoconnect=1&resize=remote&path=websockify' 'LAN noVNC URL must include websocket path'
-assert_output_contains "$url_output" 'Cloudflare URL: https://edex\.example\.com/vnc\.html\?autoconnect=1&resize=remote&path=websockify' 'Cloudflare URL must include noVNC path'
-assert_output_contains "$url_output" 'noVNC origin  : tcp://192\.0\.2\.10:8443' 'Cloudflare noVNC origin must use tcp LAN IP and web port'
-assert_output_contains "$url_output" 'VNC origin    : tcp://192\.0\.2\.10:5901' 'Cloudflare raw VNC origin must use tcp LAN IP and VNC port'
+assert_output_contains "$url_output" 'LAN browser URL: https://192\.0\.2\.10:8443/vnc\.html\?autoconnect=1&resize=remote&path=websockify' 'LAN browser URL must include websocket path'
+assert_output_contains "$url_output" 'Cloudflare browser origin: https://192\.0\.2\.10:8443' 'Cloudflare browser origin must use HTTPS LAN IP and web port'
+assert_output_contains "$url_output" 'Cloudflare browser URL   : https://edex\.example\.com/vnc\.html\?autoconnect=1&resize=remote&path=websockify' 'Cloudflare browser URL must include noVNC path'
+assert_output_contains "$url_output" 'originRequest\.noTLSVerify=true' 'Cloudflare output must mention self-signed origin TLS handling'
 assert_output_contains "$url_output" 'Raw VNC       : 127\.0\.0\.1:5901' 'raw VNC output must remain loopback-only'
+assert_output_contains "$url_output" 'Cloudflare raw VNC origin: disabled; raw VNC is loopback-only by default' 'raw VNC Cloudflare origin must be disabled by default'
 pass "access URL output covers LAN and Cloudflare tunnel"
+
+raw_vnc_env="$tmpdir/raw-vnc.env"
+cp deploy/linux/edex.env "$raw_vnc_env"
+{
+    printf '\nEDEX_RAW_VNC_HOST=0.0.0.0\n'
+    printf 'EDEX_VNC_PASSWORD_FILE=/tmp/edex-test-vnc.passwd\n'
+} >> "$raw_vnc_env"
+raw_vnc_output="$(EDEX_ACCESS_IPS='192.0.2.10' bash scripts/print-edex-access-urls.sh "$raw_vnc_env")"
+assert_output_contains "$raw_vnc_output" 'Raw VNC       : 0\.0\.0\.0:5901' 'raw VNC private backend must show configured bind host'
+assert_output_contains "$raw_vnc_output" 'Cloudflare raw VNC origin: tcp://192\.0\.2\.10:5901' 'enabled raw VNC origin must use LAN IP and VNC port'
+pass "raw VNC Cloudflare output is opt-in"
 
 assert_file_contains deploy/linux/edex.service '^User=edex$' 'systemd unit must run as the edex service user'
 assert_file_contains deploy/linux/edex.service '^EnvironmentFile=/etc/edex-ui/edex\.env$' 'systemd unit must load /etc/edex-ui/edex.env'
 assert_file_contains deploy/linux/edex.service '^ExecStart=/usr/local/bin/run-edex-session-linux\.sh$' 'systemd unit must execute the Linux session runner'
 assert_file_contains scripts/run-edex-session-linux.sh '-localhost' 'x11vnc must bind raw VNC to localhost'
+assert_file_contains scripts/run-edex-session-linux.sh 'EDEX_RAW_VNC_HOST' 'session runner must support explicit raw VNC bind host'
+assert_file_contains scripts/run-edex-session-linux.sh 'refusing to expose raw VNC' 'session runner must reject unauthenticated LAN raw VNC'
+assert_file_contains scripts/run-edex-session-linux.sh 'EDEX_VNC_PASSWORD_FILE' 'session runner must support password-protected raw VNC'
 assert_file_contains scripts/run-edex-session-linux.sh '--listen "\$\{EDEX_NOVNC_HOST\}:\$\{EDEX_NOVNC_PORT\}"' 'noVNC must listen on configured noVNC host and port'
+assert_file_contains scripts/run-edex-session-linux.sh '--vnc "\$\{vnc_proxy_host\}:\$\{EDEX_VNC_PORT\}"' 'noVNC must connect to the configured raw VNC listener'
 assert_file_contains deploy/linux/edex.env '^EDEX_NOVNC_HOST=127\.0\.0\.1$' 'default noVNC backend must be loopback-only'
+assert_file_contains deploy/linux/edex.env '^EDEX_RAW_VNC_HOST=127\.0\.0\.1$' 'default raw VNC backend must be loopback-only'
 assert_file_contains deploy/linux/edex.env '^EDEX_VNC_STACK=novnc$' 'default VNC stack must be distro noVNC'
+assert_file_contains start.sh 'print-edex-access-urls\.sh "\$ENV_FILE"' 'start.sh must use the shared URL helper'
 pass "service spec uses loopback VNC/noVNC behind nginx"
 
 printf '\nLinux service spec tests passed.\n'

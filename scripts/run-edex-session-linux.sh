@@ -30,6 +30,9 @@ load_defaults() {
     : "${EDEX_DISPLAY_BACKEND:=auto}"
     : "${EDEX_VNC_STACK:=novnc}"
     : "${EDEX_VNC_PORT:=5901}"
+    : "${EDEX_RAW_VNC_HOST:=127.0.0.1}"
+    : "${EDEX_VNC_PASSWORD_FILE:=}"
+    : "${EDEX_VNC_PASSWORD:=}"
     : "${EDEX_NOVNC_HOST:=127.0.0.1}"
     : "${EDEX_NOVNC_PORT:=6080}"
     : "${EDEX_ELECTRON_FLAGS:=--no-sandbox}"
@@ -205,6 +208,49 @@ start_kasmvnc() {
         -SecurityTypes VncAuth &
 }
 
+is_loopback_host() {
+    case "$1" in
+        127.0.0.1|localhost|::1)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+write_vnc_password_file() {
+    local password_file="${EDEX_HOME}/.vnc/passwd"
+    install -d -m 0700 "${EDEX_HOME}/.vnc"
+    x11vnc -storepasswd "$EDEX_VNC_PASSWORD" "$password_file" >/dev/null
+    chmod 0600 "$password_file"
+    printf '%s' "$password_file"
+}
+
+vnc_auth_args() {
+    if [[ -n "$EDEX_VNC_PASSWORD_FILE" ]]; then
+        if [[ ! -f "$EDEX_VNC_PASSWORD_FILE" ]]; then
+            log "EDEX_VNC_PASSWORD_FILE does not exist: ${EDEX_VNC_PASSWORD_FILE}"
+            exit 1
+        fi
+        VNC_AUTH_ARGS=(-rfbauth "$EDEX_VNC_PASSWORD_FILE")
+        return
+    fi
+
+    if [[ -n "$EDEX_VNC_PASSWORD" ]]; then
+        VNC_AUTH_ARGS=(-rfbauth "$(write_vnc_password_file)")
+        return
+    fi
+
+    if is_loopback_host "$EDEX_RAW_VNC_HOST"; then
+        VNC_AUTH_ARGS=(-nopw)
+        return
+    fi
+
+    log "refusing to expose raw VNC on ${EDEX_RAW_VNC_HOST}:${EDEX_VNC_PORT} without EDEX_VNC_PASSWORD_FILE or EDEX_VNC_PASSWORD"
+    exit 1
+}
+
 start_novnc_fallback() {
     require_cmd x11vnc
 
@@ -218,18 +264,32 @@ start_novnc_fallback() {
         exit 127
     fi
 
-    log "starting x11vnc on localhost:${EDEX_VNC_PORT}"
+    local vnc_bind_args=()
+    local vnc_proxy_host="127.0.0.1"
+    if is_loopback_host "$EDEX_RAW_VNC_HOST"; then
+        vnc_bind_args=(-localhost)
+    else
+        vnc_bind_args=(-listen "$EDEX_RAW_VNC_HOST")
+        if [[ "$EDEX_RAW_VNC_HOST" != "0.0.0.0" ]]; then
+            vnc_proxy_host="$EDEX_RAW_VNC_HOST"
+        fi
+    fi
+
+    local VNC_AUTH_ARGS=()
+    vnc_auth_args
+
+    log "starting x11vnc on ${EDEX_RAW_VNC_HOST}:${EDEX_VNC_PORT}"
     x11vnc -display "$EDEX_DISPLAY" \
-        -forever -shared -localhost \
+        -forever -shared "${vnc_bind_args[@]}" \
         -rfbport "$EDEX_VNC_PORT" \
-        -nopw -xkb -repeat &
+        "${VNC_AUTH_ARGS[@]}" -xkb -repeat &
 
     sleep 1
 
     log "starting noVNC on ${EDEX_NOVNC_HOST}:${EDEX_NOVNC_PORT}"
     "$novnc_proxy" \
         --listen "${EDEX_NOVNC_HOST}:${EDEX_NOVNC_PORT}" \
-        --vnc "127.0.0.1:${EDEX_VNC_PORT}" &
+        --vnc "${vnc_proxy_host}:${EDEX_VNC_PORT}" &
 }
 
 start_vnc_stack() {

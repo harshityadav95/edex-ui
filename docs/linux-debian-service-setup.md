@@ -160,6 +160,7 @@ EDEX_RESOLUTION=1600x900
 EDEX_DEPTH=24
 EDEX_DISPLAY_BACKEND=auto
 EDEX_VNC_STACK=novnc
+EDEX_RAW_VNC_HOST=127.0.0.1
 EDEX_WEB_PORT=8443
 EDEX_ELECTRON_FLAGS="--no-sandbox"
 ```
@@ -189,28 +190,47 @@ If you installed from a different source path, run `render-edex-nginx-config.sh`
 
 ## 8. Cloudflare Tunnel
 
-Cloudflare Tunnel TCP origins should use the LAN IP and port form:
+Cloudflare Tunnel browser origins should use the LAN IP and HTTPS web port when `cloudflared` runs on a different machine than eDEX/Nginx. In that setup, `localhost` points at the `cloudflared` machine, not the eDEX service host:
 
 ```text
-tcp://<server-ip>:<port>
+https://<server-ip>:8443
 ```
 
-For browser-rendered noVNC, use the Nginx web port:
+With the generated self-signed Nginx certificate, set `noTLSVerify` on the tunnel origin:
 
-```text
-tcp://<server-ip>:8443
-```
-
-For a raw VNC client, use the VNC port only when you explicitly need direct VNC:
-
-```text
-tcp://<server-ip>:5901
+```yaml
+ingress:
+  - hostname: edex.example.com
+    service: https://<server-ip>:8443
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404
 ```
 
 After the noVNC tunnel is created, open the Cloudflare hostname with:
 
 ```text
 https://<cloudflare-hostname>/vnc.html?autoconnect=1&resize=remote&path=websockify
+```
+
+For a raw VNC client, use the VNC port only when you explicitly need direct VNC. Raw VNC is loopback-only by default and must be enabled intentionally before another LAN machine, including a separate `cloudflared` host, can reach it:
+
+```bash
+EDEX_RAW_VNC_HOST=0.0.0.0
+EDEX_VNC_PASSWORD_FILE=/var/lib/edex-ui/.vnc/passwd
+```
+
+Create the password file as the service user:
+
+```bash
+sudo -u edex install -d -m 0700 /var/lib/edex-ui/.vnc
+sudo -u edex x11vnc -storepasswd /var/lib/edex-ui/.vnc/passwd
+```
+
+Then configure the Cloudflare Tunnel raw VNC service as:
+
+```text
+tcp://<server-ip>:5901
 ```
 
 Set `EDEX_PUBLIC_HOSTNAME=edex.example.com` in `/etc/edex-ui/edex.env` if you want `check-edex-service.sh` to print the final Cloudflare browser URL.

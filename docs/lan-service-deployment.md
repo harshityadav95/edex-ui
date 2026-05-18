@@ -93,10 +93,21 @@ Ports that must not be exposed to the LAN:
 6080/tcp       noVNC/Kasm backend
 ```
 
-For internet access, place the service behind a VPN or identity-aware gateway. Cloudflare Tunnel TCP origins should use the LAN IP and port:
+For internet access, place the service behind a VPN or identity-aware gateway. If `cloudflared` runs on a different machine than eDEX/Nginx, do not use `localhost` as the tunnel origin. `localhost` would point at the `cloudflared` machine, not the eDEX service host. Use the LAN IP and HTTPS web port of the eDEX/Nginx host:
 
 ```text
-tcp://<server-ip>:8443
+https://<server-ip>:8443
+```
+
+With the generated self-signed Nginx certificate, set `noTLSVerify` on the tunnel origin:
+
+```yaml
+ingress:
+  - hostname: edex.example.com
+    service: https://<server-ip>:8443
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404
 ```
 
 Cloudflare browser URL:
@@ -105,7 +116,14 @@ Cloudflare browser URL:
 https://<cloudflare-hostname>/vnc.html?autoconnect=1&resize=remote&path=websockify
 ```
 
-Use `tcp://<server-ip>:5901` only for raw VNC client access. Do not forward `8443` directly to the public internet.
+Use `tcp://<server-ip>:5901` only for raw VNC client access, and only after explicitly enabling a LAN-facing raw VNC listener with password protection:
+
+```bash
+EDEX_RAW_VNC_HOST=0.0.0.0
+EDEX_VNC_PASSWORD_FILE=/var/lib/edex-ui/.vnc/passwd
+```
+
+Do not forward `8443` directly to the public internet.
 
 ## Installation Flow
 
