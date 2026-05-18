@@ -1,167 +1,352 @@
-<p align="center">
-  <br>
-  <img alt="Logo" src="media/logo.png">
-  <br><br>
-  <a href="https://lgtm.com/projects/g/GitSquared/edex-ui/context:javascript"><img alt="undefined" src="https://img.shields.io/lgtm/grade/javascript/g/GitSquared/edex-ui.svg?logo=lgtm&logoWidth=18"/></a>
-  <br>
-  <a href="https://github.com/GitSquared/edex-ui/releases/latest"><img alt="undefined" src="https://img.shields.io/github/release/GitSquared/edex-ui.svg?style=popout"></a>
-  <a href="#featured-in"><img alt="undefined" src="https://img.shields.io/github/downloads/GitSquared/edex-ui/total.svg?style=popout"></a>
-  <a href="https://github.com/GitSquared/edex-ui/blob/master/LICENSE"><img alt="undefined" src="https://img.shields.io/github/license/GitSquared/edex-ui.svg?style=popout"></a>
-  <br>
-  <a href="https://github.com/GitSquared/edex-ui/releases/download/v2.2.8/eDEX-UI-Windows.exe" target="_blank"><img alt="undefined" src="https://badgen.net/badge/Download/Windows/?color=blue&icon=windows&label"></a>
-  <a href="https://github.com/GitSquared/edex-ui/releases/download/v2.2.8/eDEX-UI-macOS.dmg" target="_blank"><img alt="undefined" src="https://badgen.net/badge/Download/macOS/?color=grey&icon=apple&label"></a>
-  <a href="https://github.com/GitSquared/edex-ui/releases/download/v2.2.8/eDEX-UI-Linux-x86_64.AppImage" target="_blank"><img alt="undefined" src="https://badgen.net/badge/Download/Linux64/?color=orange&icon=terminal&label"></a>
-  <a href="https://github.com/GitSquared/edex-ui/releases/download/v2.2.8/eDEX-UI-Linux-arm64-AppImage" target="_blank"><img alt="undefined" src="https://badgen.net/badge/Download/LinuxArm64/?color=orange&icon=terminal&label"></a>
-  <a href="https://aur.archlinux.org/packages/edex-ui" target="_blank"><img alt="undefined" src="https://badgen.net/badge/AUR/Package/cyan"></a>
-  <br>
-  <a href="https://github.com/GitSquared/edex-ui/releases/tag/v2.2.8"><strong><i>(Project archived oct. 18th 2021)</i></strong></a>
-  <br><br><br>
-</p>
+# eDEX-UI LAN Browser Service
 
-eDEX-UI is a fullscreen, cross-platform terminal emulator and system monitor that looks and feels like a sci-fi computer interface.
+This repository is a maintained deployment fork of **eDEX-UI**, the fullscreen sci-fi terminal emulator and system monitor originally created by [GitSquared](https://github.com/GitSquared/edex-ui).
 
----
+The current working setup keeps eDEX-UI as an Electron desktop application, but runs it headlessly on Linux and streams the desktop to a browser over HTTPS. It is intended for Debian/Ubuntu servers, containers, VMs, and LAN-hosted dashboards.
 
-<a href="https://youtu.be/BGeY1rK19zA">
-  <img align="right" width="400" alt="Demo on YouTube" src="media/youtube-demo-teaser.gif">
-</a>
+## What Works
 
-Heavily inspired from the [TRON Legacy movie effects](https://web.archive.org/web/20170511000410/http://jtnimoy.com/blogs/projects/14881671) (especially the [Board Room sequence](https://gmunk.com/TRON-Board-Room)), the eDEX-UI project was originally meant to be *"[DEX-UI](https://github.com/seenaburns/dex-ui) with less « art » and more « distributable software »"*.
+- Debian 12 and Ubuntu 24.04 service deployment.
+- LXD/LXC, Proxmox LXC, VM, or bare-metal Linux host.
+- Source build using Node.js 22 and Electron.
+- Virtual display using Xvfb, or Xorg dummy when a render device is available.
+- Openbox window manager for the Electron desktop session.
+- Browser access through noVNC at an authenticated HTTPS endpoint.
+- Nginx Basic Auth in front of noVNC.
+- Private loopback binding for VNC, noVNC, and eDEX terminal WebSocket ports.
+- Optional Cloudflare Tunnel access for the browser-rendered noVNC page.
+- Health-check and URL helper scripts.
 
-While keeping a futuristic look and feel, it strives to maintain a certain level of functionality and to be usable in real-life scenarios, with the larger goal of bringing science-fiction UXs to the mainstream.
+The AppImage download path from the archived upstream project is not used for this service setup.
 
-<br>
+## Architecture
 
-It might or might not be a joke taken too seriously.
+```text
+LAN browser or Cloudflare hostname
+  -> Nginx HTTPS Basic Auth on 8443
+      -> noVNC backend on 127.0.0.1:6080
+          -> x11vnc on 127.0.0.1:5901
+              -> virtual X11 display :1
+                  -> Openbox
+                      -> eDEX-UI Electron app
+                          -> terminal WebSockets on 127.0.0.1:3000-3006
+```
 
+Only Nginx is intended to be reachable from the LAN. The VNC, noVNC, and eDEX internal ports should remain private unless you deliberately configure raw VNC access.
 
----
+## Requirements
 
-<p align="center">
-  <em>Jump to: <br><a href="#features">Features</a> — <a href="#screenshots">Screenshots</a> — <a href="#qa">Questions & Answers</a> — <strong><a href="#how-do-i-get-it">Download</a></strong> — <a href="#featured-in">Featured In</a> — <a href="#useful-commands-for-the-nerds">Contributor Instructions</a> — <a href="#credits">Credits</a></em>
-</p>
+Use one of:
 
+- Debian 12
+- Ubuntu 24.04
+- LXD/LXC container
+- Proxmox LXC container
+- VM or bare-metal Linux host
 
-## Features
-- Fully featured terminal emulator with tabs, colors, mouse events, and support for `curses` and `curses`-like applications.
-- Real-time system (CPU, RAM, swap, processes) and network (GeoIP, active connections, transfer rates) monitoring.
-- Full support for touch-enabled displays, including an on-screen keyboard.
-- Directory viewer that follows the CWD (current working directory) of the terminal.
-- Advanced customization using themes, on-screen keyboard layouts, CSS injections. See the [wiki](https://github.com/GitSquared/edex-ui/wiki) for more info.
-- Optional sound effects made by a talented sound designer for maximum hollywood hacking vibe.
+Minimum resources:
 
-## Screenshots
-![Default screenshot](media/screenshot_default.png)
+- 2 vCPU
+- 2 GB RAM
+- 10 GB disk
 
-_[neofetch](https://github.com/dylanaraps/neofetch) on eDEX-UI 2.2 with the default "tron" theme & QWERTY keyboard_
+Recommended resources:
 
-![Blade screenshot](media/screenshot_blade.png)
+- 2-4 vCPU
+- 4 GB RAM
+- Optional `/dev/dri/renderD*` render device for accelerated display paths
 
-_Checking out available themes in [eDEX's config dir](https://github.com/GitSquared/edex-ui/wiki/userData) with [`ranger`](https://github.com/ranger/ranger) on eDEX-UI 2.2 with the "blade" theme_
+## Quick Install
 
-![Disrupted screenshot](media/screenshot_disrupted.png)
+Clone the repository on the target Linux host:
 
-_[cmatrix](https://github.com/abishekvashok/cmatrix) on eDEX-UI 2.2 with the experimental "tron-disrupted" theme, and the user-contributed DVORAK keyboard_
+```bash
+apt update
+apt install -y git sudo ca-certificates
+git clone https://github.com/harshityadav95/edex-ui.git /root/edex-ui
+cd /root/edex-ui
+```
 
-![Horizon screenshot](media/screenshot_horizon.png)
+Run the installer:
 
-_Editing eDEX-UI source code with `nvim` on eDEX-UI 2.2 with the custom [`horizon-full`](https://github.com/GitSquared/horizon-edex-theme) theme_
+```bash
+sudo scripts/install-edex-service-linux.sh
+```
 
-## Q&A
-#### How do I get it?
-Click on the little badges under the eDEX logo at the top of this page, or go to the [Releases](https://github.com/GitSquared/edex-ui/releases) tab, or download it through [one of the available repositories](https://repology.org/project/edex-ui/versions) (Homebrew, AUR...).
+For a non-interactive install with known web credentials:
 
-Public release binaries are unsigned ([why](https://gaby.dev/posts/code-signing)). On Linux, you will need to `chmod +x` the AppImage file in order to run it.
-#### I have a problem!
-Search through the [Issues](https://github.com/GitSquared/edex-ui/issues) to see if yours has already been reported. If you're confident it hasn't been reported yet, feel free to open up a new one. If you see your issue and it's been closed, it probably means that the fix for it will ship in the next version, and you'll have to wait a bit.
-#### Can you disable the keyboard/the filesystem display?
-You can't disable them (yet) but you can hide them. See the `tron-notype` theme.
-#### Why is the file browser saying that "Tracking Failed"? (Windows only)
-On Linux and macOS, eDEX tracks where you're going in your terminal tab to display the content of the current folder on-screen.
-Sadly, this is technically impossible to do on Windows right now, so the file browser reverts back to a "detached" mode. You can still use it to browse files & directories and click on files to input their path in the terminal.
-#### Can this run on a Raspberry Pi / ARM device?
-We provide prebuilt arm64 builds. For other platforms, see [this issue comment](https://github.com/GitSquared/edex-ui/issues/313#issuecomment-443465345), and the thread on issue [#818](https://github.com/GitSquared/edex-ui/issues/818).
-#### Is this repo actively maintained?
-No, after a 3 years run, this project has been archived. See the [announcement](https://github.com/GitSquared/edex-ui/releases/tag/v2.2.8).
-#### How did you make this?
-Glad you're interested! See [#272](https://github.com/GitSquared/edex-ui/issues/272).
-#### This is so cool.
-Thanks! If you feel like it, you can [follow me on Twitter](https://gaby.dev/twitter) to hear about new stuff I'm making.
+```bash
+sudo EDEX_WEB_USER=operator EDEX_WEB_PASSWORD='change-this-password' scripts/install-edex-service-linux.sh
+```
 
-<img width="220" src="https://78.media.tumblr.com/35d4ef4447e0112f776b629bffd99188/tumblr_mk4gf8zvyC1s567uwo1_500.gif" />
+The installer:
 
+- installs Node.js 22 when needed;
+- installs the Linux runtime packages for Electron, X11, noVNC, Nginx, and builds;
+- creates the `edex` service user;
+- copies the app to `/opt/edex-ui`;
+- runs `npm run install-linux`;
+- installs `/etc/edex-ui/edex.env`;
+- installs and enables `edex.service`;
+- renders and enables the Nginx HTTPS proxy;
+- creates the Nginx password file;
+- starts `edex.service` and `nginx`.
 
-## Featured in...
-- [Linux Uprising Blog](https://www.linuxuprising.com/2018/11/edex-ui-fully-functioning-sci-fi.html)
-- [My post on r/unixporn](https://www.reddit.com/r/unixporn/comments/9ysbx7/oc_a_little_project_that_ive_been_working_on/)
-- [Korben article (in french)](https://korben.info/une-interface-futuriste-pour-vos-ecrans-tactiles.html)
-- [Hacker News](https://news.ycombinator.com/item?id=18509828)
-- [This tweet that made me smile](https://twitter.com/mikemaccana/status/1065615451940667396)
-- [BoingBoing article](https://boingboing.net/2018/11/23/simulacrum-sf.html) - Apparently i'm a "French hacker"
-- [OReilly 4 short links](https://www.oreilly.com/ideas/four-short-links-23-november-2018)
-- [Hackaday](https://hackaday.com/2018/11/23/look-like-a-movie-hacker/)
-- [Developpez.com (another french link)](https://www.developpez.com/actu/234808/Une-application-de-bureau-ressemble-a-une-interface-d-ordinateur-de-science-fiction-inspiree-des-effets-du-film-TRON-Legacy/)
-- [GitHub Blog's Release Radar November 2018](https://blog.github.com/2018-12-21-release-radar-november-2018/)
-- [opensource.com Productive Tools for 2019](https://opensource.com/article/19/1/productivity-tool-edex-ui)
-- [O'Reilly 4 short links (again)](https://www.oreilly.com/radar/four-short-links-7-july-2020/)
-- [LinuxLinks](https://www.linuxlinks.com/linux-candy-edex-ui-sci-fi-computer-terminal-emulator-system-monitor/)
-- [Linux For Everyone (Youtube)](https://www.youtube.com/watch?v=gbzqCAjm--g)
-- [BestOfJS Rising Stars 2020](https://risingstars.js.org/2020/en#edex-ui)
-- [The Geek Freaks (Youtube/German)](https://youtu.be/TSjMIeLG0Sk)
-- [JSNation Open Source Awards 2021](https://osawards.com/javascript/#nominees) (Nominee - Fun Side Project of the Year)
+## Open In A Browser
 
+Find the host IP:
 
-## Useful commands for the nerds
+```bash
+hostname -I
+```
 
-**IMPORTANT NOTE:** the following instructions are meant for running eDEX from the latest unoptimized, unreleased, development version. If you'd like to get stable software instead, refer to [these](#how-do-i-get-it) instructions.
+Open:
 
-#### Starting from source:
-on *nix systems (You'll need the Xcode command line tools on macOS):
-- clone the repository
-- `npm run install-linux`
-- `npm run start`
+```text
+https://<server-ip>:8443/vnc.html?autoconnect=1&resize=remote&path=websockify
+```
 
-on Windows:
-- start cmd or powershell **as administrator**
-- clone the repository
-- `npm run install-windows`
-- `npm run start`
+The default Nginx certificate is self-signed, so the browser will show a certificate warning. Accept it for the local service, then log in with the username/password configured during installation.
 
-#### Building
-Note: Due to native modules, you can only build targets for the host OS you are using.
+You can print the exact LAN and Cloudflare URLs at any time:
 
-- `npm install` (NOT `install-linux` or `install-windows`)
-- `npm run build-linux` or `build-windows` or `build-darwin`
+```bash
+sudo check-edex-service.sh
+```
 
-The script will minify the source code, recompile native dependencies and create distributable assets in the `dist` folder.
+or:
 
-`build-darwin` intentionally creates an unsigned local DMG. A macOS DMG downloaded from GitHub Actions must be Developer ID signed and notarized or Gatekeeper can report the installed app as damaged/corrupted. The CI macOS jobs use `build-darwin-signed` / `build-darwin-arm64-signed` and require these repository secrets:
+```bash
+print-edex-access-urls.sh /etc/edex-ui/edex.env
+```
 
-- `MACOS_CSC_LINK`: base64-encoded Developer ID Application `.p12` certificate.
-- `MACOS_CSC_KEY_PASSWORD`: password for the `.p12` certificate.
-- `APPLE_ID`: Apple ID used for notarization.
-- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
-- `APPLE_TEAM_ID`: Apple Developer Team ID.
+## One-Command Local Setup Helper
 
-#### Getting the bleeding edge
-If you're interested in running the latest in-development version but don't want to compile source code yourself, you can can get pre-built nightly binaries on [GitHub Actions](https://github.com/GitSquared/edex-ui/actions): click the latest commits, and download the artifacts bundle for your OS.
+`start.sh` wraps the service installer and prints LAN and Cloudflare tunnel guidance after installation:
+
+```bash
+sudo ./start.sh
+```
+
+It installs the same systemd service and Nginx/noVNC stack as `scripts/install-edex-service-linux.sh`.
+
+## Service Management
+
+Check status:
+
+```bash
+sudo systemctl status edex.service
+sudo systemctl status nginx
+```
+
+Restart:
+
+```bash
+sudo systemctl restart edex.service nginx
+```
+
+Follow logs:
+
+```bash
+sudo journalctl -u edex.service -f
+```
+
+Run the service checker:
+
+```bash
+sudo check-edex-service.sh
+```
+
+## Configuration
+
+Runtime configuration lives in:
+
+```text
+/etc/edex-ui/edex.env
+```
+
+Common settings:
+
+```bash
+EDEX_RESOLUTION=1600x900
+EDEX_DEPTH=24
+EDEX_DISPLAY_BACKEND=auto
+EDEX_VNC_STACK=novnc
+EDEX_RAW_VNC_HOST=127.0.0.1
+EDEX_NOVNC_HOST=127.0.0.1
+EDEX_WEB_PORT=8443
+EDEX_ELECTRON_FLAGS="--no-sandbox"
+EDEX_DISABLE_AUDIO=false
+EDEX_THEME=tron
+```
+
+Display backends:
+
+- `auto`: use Xorg dummy when `/dev/dri/renderD128` is available, otherwise fall back to Xvfb.
+- `xvfb`: most compatible software display path.
+- `xorg-dri`: require the Xorg dummy path; use only after GPU passthrough works.
+
+VNC stacks:
+
+- `novnc`: default distro package path using x11vnc plus noVNC.
+- `auto`: prefer KasmVNC if installed and configured, otherwise use noVNC.
+- `kasm`: require KasmVNC.
+
+After changing `/etc/edex-ui/edex.env`, apply the changes:
+
+```bash
+sudo systemctl restart edex.service
+sudo render-edex-nginx-config.sh
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## Cloudflare Tunnel
+
+For browser access through Cloudflare Tunnel, point the tunnel origin at the eDEX/Nginx HTTPS service:
+
+```text
+https://<server-ip>:8443
+```
+
+If `cloudflared` runs on a different machine than eDEX-UI, do not use `localhost` as the origin. `localhost` would refer to the `cloudflared` machine, not the eDEX host.
+
+With the generated self-signed Nginx certificate, disable origin TLS verification:
+
+```yaml
+ingress:
+  - hostname: edex.example.com
+    service: https://<server-ip>:8443
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404
+```
+
+Then open:
+
+```text
+https://edex.example.com/vnc.html?autoconnect=1&resize=remote&path=websockify
+```
+
+Do not expose ports `5901`, `6080`, or `3000-3006` publicly.
+
+## Raw VNC
+
+Raw VNC is loopback-only by default:
+
+```bash
+EDEX_RAW_VNC_HOST=127.0.0.1
+EDEX_VNC_PORT=5901
+```
+
+Only enable LAN-facing raw VNC when you explicitly need a VNC client. A password is required when binding raw VNC to a non-loopback address:
+
+```bash
+EDEX_RAW_VNC_HOST=0.0.0.0
+EDEX_VNC_PASSWORD_FILE=/var/lib/edex-ui/.vnc/passwd
+```
+
+or:
+
+```bash
+EDEX_RAW_VNC_HOST=0.0.0.0
+EDEX_VNC_PASSWORD='change-this-vnc-password'
+```
+
+For normal browser use, keep raw VNC private and access eDEX through the HTTPS noVNC URL.
+
+## Development From Source
+
+Install dependencies and native modules:
+
+```bash
+npm run install-linux
+```
+
+Start the desktop app directly:
+
+```bash
+npm run start
+```
+
+This direct mode launches Electron locally and does not install the browser/VNC service.
+
+Build distributable desktop packages for the host platform:
+
+```bash
+npm run build-linux
+npm run build-darwin
+npm run build-windows
+```
+
+Native modules mean builds should be created on the target OS family.
+
+## Tests
+
+Run the Linux service contract tests:
+
+```bash
+npm run test:linux-service
+```
+
+The tests validate shell script syntax, Nginx template rendering, URL output, service defaults, and the loopback-only backend contract.
+
+## Useful Files
+
+- `start.sh`: convenience installer wrapper.
+- `scripts/install-edex-service-linux.sh`: primary Debian/Ubuntu service installer.
+- `scripts/run-edex-session-linux.sh`: systemd session runner for display, Electron, and VNC/noVNC.
+- `scripts/check-edex-service.sh`: status, listener, process, and journal checker.
+- `scripts/print-edex-access-urls.sh`: LAN and Cloudflare URL helper.
+- `scripts/render-edex-nginx-config.sh`: renders Nginx config from `/etc/edex-ui/edex.env`.
+- `deploy/linux/edex.service`: systemd unit.
+- `deploy/linux/edex.env`: default runtime environment.
+- `deploy/linux/nginx-edex.conf`: Nginx HTTPS/noVNC reverse proxy template.
+- `docs/linux-debian-service-setup.md`: detailed Debian/Ubuntu runbook.
+- `docs/lan-service-deployment.md`: service architecture notes.
+
+## Troubleshooting
+
+Check the service first:
+
+```bash
+sudo check-edex-service.sh
+```
+
+If the browser cannot connect:
+
+- confirm `nginx` is active;
+- confirm port `8443/tcp` is reachable from your LAN;
+- use the full noVNC path: `/vnc.html?autoconnect=1&resize=remote&path=websockify`;
+- verify that noVNC and VNC are listening only on loopback;
+- check `sudo journalctl -u edex.service -n 100 --no-pager`.
+
+If the display does not start in a container, set:
+
+```bash
+EDEX_DISPLAY_BACKEND=xvfb
+```
+
+then restart:
+
+```bash
+sudo systemctl restart edex.service
+```
+
+If Cloudflare Tunnel shows a TLS/origin error, make sure the tunnel uses:
+
+```text
+originRequest.noTLSVerify=true
+```
+
+and that the service URL is the eDEX host LAN address, not `localhost`, unless `cloudflared` is running on the same host.
 
 ## Credits
-eDEX-UI's source code was primarily written by me, [Squared](https://github.com/GitSquared). If you want to get in touch with me or find other projects I'm involved in, check out [my website](https://gaby.dev).
 
-[PixelyIon](https://github.com/PixelyIon) helped me get started with Windows compatibility and offered some precious advice when I started to work on this project seriously.
+The original eDEX-UI application was created by [Gabriel "Squared" Saillard](https://github.com/GitSquared). This repository keeps the original application code and adds the Linux browser service deployment workflow.
 
-[IceWolf](https://soundcloud.com/iamicewolf) composed the sound effects on v2.1.x and above. He makes really cool stuff, check out his music!
+Thanks to the original eDEX-UI contributors and the upstream projects used by eDEX-UI, including Electron, xterm.js, systeminformation, SmoothieCharts, noVNC, x11vnc, and Nginx.
 
-## Thanks
-Of course, eDEX would never have existed if I hadn't stumbled upon the amazing work of [Seena](https://github.com/seenaburns) on [r/unixporn](https://reddit.com/r/unixporn).
+## License
 
-This project uses a bunch of open-source libraries, frameworks and tools, see [the full dependency graph](https://github.com/GitSquared/edex-ui/network/dependencies).
-
-I want to namely thank the developers behind [xterm.js](https://github.com/xtermjs/xterm.js), [systeminformation](https://github.com/sebhildebrandt/systeminformation) and [SmoothieCharts](https://github.com/joewalnes/smoothie).
-
-Huge thanks to [Rob "Arscan" Scanlon](https://github.com/arscan) for making the fantastic [ENCOM Globe](https://github.com/arscan/encom-globe), also inspired by the TRON: Legacy movie, and distributing it freely. His work really puts the icing on the cake.
-
-## Licensing
-
-Licensed under the [GPLv3.0](https://github.com/GitSquared/edex-ui/blob/master/LICENSE).
+GPL-3.0. See [LICENSE](LICENSE).
