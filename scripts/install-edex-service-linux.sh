@@ -14,6 +14,35 @@ need_root() {
     fi
 }
 
+need_debian_linux() {
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        printf 'This installer supports Debian/Ubuntu Linux only.\n' >&2
+        exit 1
+    fi
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        printf 'This installer requires apt-get and supports Debian/Ubuntu Linux only.\n' >&2
+        exit 1
+    fi
+
+    local id="" id_like=""
+    if [[ -r /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        source /etc/os-release
+        id="${ID:-}"
+        id_like="${ID_LIKE:-}"
+    fi
+
+    case " ${id} ${id_like} " in
+        *" debian "*|*" ubuntu "*)
+            return
+            ;;
+    esac
+
+    printf 'This installer supports Debian/Ubuntu Linux only. Detected ID=%s ID_LIKE=%s.\n' "${id:-unknown}" "${id_like:-unknown}" >&2
+    exit 1
+}
+
 apt_install() {
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
@@ -132,6 +161,7 @@ enable_services() {
 }
 
 main() {
+    need_debian_linux
     need_root
     local alsa_package
     alsa_package="$(alsa_runtime_package)"

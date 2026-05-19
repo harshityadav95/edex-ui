@@ -1127,13 +1127,6 @@ document.addEventListener("keydown", e => {
     }
 });
 
-// Fix #265
-window.addEventListener("keyup", e => {
-    if (require("os").platform() === "win32" && e.key === "F4" && e.altKey === true) {
-        remote.app.quit();
-    }
-});
-
 // Fix double-tap zoom on touchscreens
 electron.webFrame.setVisualZoomLevelLimits(1, 1);
 

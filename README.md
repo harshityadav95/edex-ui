@@ -7,7 +7,7 @@ The application remains an Electron desktop app. The service layer makes that de
 - On Linux, eDEX runs on a virtual display and is streamed through noVNC behind authenticated HTTPS.
 - On macOS, eDEX runs in the logged-in desktop session and native Screen Sharing is exposed through noVNC, with a separate top-bar controller for start/stop and URL actions.
 
-The archived upstream AppImage download path is not used for this service setup.
+Linux support is the Debian/Ubuntu source-service installation path only. The macOS DMG remains the only packaged desktop artifact.
 
 ## Supported Profiles
 
@@ -357,15 +357,13 @@ npm run start
 
 Direct mode launches Electron locally and does not install the browser/VNC service.
 
-Build distributable desktop packages for the host platform:
+Build the macOS distributable desktop package:
 
 ```bash
-npm run build-linux
 npm run build-darwin
-npm run build-windows
 ```
 
-Native modules mean builds should be created on the target OS family.
+On Linux, use `sudo ./start.sh` or `sudo scripts/install-edex-service-linux.sh` to install the Debian/Ubuntu service from source.
 
 ## Tests
 

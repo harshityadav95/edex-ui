@@ -2,7 +2,7 @@
 
 This is the primary runbook for running eDEX-UI as a Linux service and opening it from a LAN browser with username/password authentication. It also covers forwarding the same browser-rendered noVNC endpoint through Cloudflare Tunnel.
 
-eDEX-UI is an Electron desktop application. This setup runs it on a virtual Linux display, streams that display through VNC/noVNC, and exposes a single authenticated Nginx HTTPS endpoint. It does not use AppImage.
+eDEX-UI is an Electron desktop application. This setup runs it on a virtual Linux display, streams that display through VNC/noVNC, and exposes a single authenticated Nginx HTTPS endpoint. Linux support is installed from source as a Debian/Ubuntu service.
 
 ## 1. Target System
 

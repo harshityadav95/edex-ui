@@ -3,17 +3,8 @@ class Sysinfo {
         if (!parentId) throw "Missing parameters";
 
         // See #255
-        let os;
-        switch (require("os").platform()) {
-            case "darwin":
-                os = "macOS";
-                break;
-            case "win32":
-                os = "win";
-                break;
-            default:
-                os = require("os").platform();
-        }
+        const platform = require("os").platform();
+        const os = platform === "darwin" ? "macOS" : "linux";
 
         // Create DOM
         this.parent = document.getElementById(parentId);

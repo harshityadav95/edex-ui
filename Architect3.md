@@ -6,7 +6,7 @@ Move from desktop-only usage to a Linux service deployment where eDEX-UI is avai
 
 ## What Changes
 
-- Source build replaces AppImage usage.
+- Source-service installation is the supported Linux path.
 - systemd owns the lifecycle.
 - `/etc/edex-ui/edex.env` owns runtime settings.
 - `/var/lib/edex-ui` owns persistent service state.
@@ -47,4 +47,3 @@ sudo rm -f /etc/nginx/sites-enabled/edex-ui
 sudo rm -f /etc/nginx/sites-available/edex-ui
 sudo systemctl daemon-reload
 ```
-

@@ -21,6 +21,13 @@ signale.start(`Starting eDEX-UI v${app.getVersion()}`);
 signale.info(`With Node ${process.versions.node} and Electron ${process.versions.electron}`);
 signale.info(`Renderer is Chrome ${process.versions.chrome}`);
 
+if (!["darwin", "linux"].includes(process.platform)) {
+    const message = `Unsupported platform: ${process.platform}. eDEX-UI supports macOS and Debian/Ubuntu Linux only.`;
+    signale.fatal(message);
+    dialog.showErrorBox("Unsupported platform", message);
+    app.exit(1);
+}
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
     signale.fatal("Error: Another instance of eDEX is already running. Cannot proceed.");
@@ -64,7 +71,7 @@ app.commandLine.appendSwitch("ignore-gpu-blocklist");
 app.commandLine.appendSwitch("enable-gpu-rasterization");
 app.commandLine.appendSwitch("enable-video-decode");
 
-// Fix userData folder not setup on Windows
+// Ensure userData folder exists before writing default config.
 try {
     fs.mkdirSync(electron.app.getPath("userData"));
     signale.info(`Created config dir at ${electron.app.getPath("userData")}`);
@@ -74,7 +81,7 @@ try {
 // Create default settings file
 if (!fs.existsSync(settingsFile)) {
     fs.writeFileSync(settingsFile, JSON.stringify({
-        shell: (process.platform === "win32") ? "powershell.exe" : "bash",
+        shell: "bash",
         shellArgs: '',
         cwd: electron.app.getPath("userData"),
         keyboard: "en-US",

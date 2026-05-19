@@ -2,12 +2,15 @@
   "name": "edex-ui",
   "productName": "eDEX-UI",
   "version": "2.2.8",
-  "description": "eDEX-UI sci-fi interface",
+  "description": "eDEX-UI sci-fi interface for macOS and Debian/Ubuntu Linux",
   "keywords": [
     "desktop",
     "sci-fi",
     "gui",
-    "portable",
+    "macos",
+    "linux",
+    "debian",
+    "ubuntu",
     "tty",
     "terminal"
   ],
@@ -21,6 +24,10 @@
   },
   "author": "Gabriel 'Squared' SAILLARD <gabriel@saillard.dev> (https://gaby.dev)",
   "license": "GPL-3.0",
+  "os": [
+    "darwin",
+    "linux"
+  ],
   "bugs": {
     "url": "https://github.com/GitSquared/edex-ui/issues"
   },

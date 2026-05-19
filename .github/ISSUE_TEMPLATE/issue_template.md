@@ -21,8 +21,7 @@ labels: investigation
  - [ ] `vX.X.X` (specify other version)
 
 **Running on:**
- - [ ] Linux
- - [ ] Windows
+ - [ ] Debian/Ubuntu Linux
  - [ ] macOS
 
 **How comfortable you are with your system and/or IT in general:**

@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
 
       - name: Cache Electron binaries
@@ -25,7 +25,10 @@ jobs:
           key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Prepare macOS arm64 app source
+        run: npm run prebuild-darwin-arm64
 
       - name: Verify macOS signing secrets
         run: |

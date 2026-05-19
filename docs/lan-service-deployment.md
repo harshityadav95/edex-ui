@@ -7,11 +7,11 @@ This document describes the supported LAN service architecture for eDEX-UI on De
 - Debian 12 or Ubuntu 24.04.
 - systemd service manager.
 - LXD/LXC, Proxmox LXC, VM, or bare-metal Linux.
-- Source build with `npm run install-linux`.
+- Source-service installation with `npm run install-linux`.
 - Browser access at `https://<server-ip>:8443/vnc.html?autoconnect=1&resize=remote&path=websockify`.
 - Optional Cloudflare Tunnel access by forwarding local Nginx HTTPS to a public hostname.
 
-The AppImage path is intentionally not used for this service deployment.
+Linux desktop package artifacts are intentionally not produced for this service deployment.
 
 ## Runtime Architecture
 

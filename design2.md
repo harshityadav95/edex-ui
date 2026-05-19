@@ -4,7 +4,7 @@
 
 This design defines a Linux-only service deployment for eDEX-UI. The service runs on Debian/Ubuntu and presents eDEX-UI to LAN browsers through an authenticated HTTPS endpoint.
 
-The design does not use AppImage and does not attempt to rewrite eDEX-UI into a web application. eDEX-UI continues to run as an Electron desktop app on a virtual Linux display.
+The design uses source-service installation and does not attempt to rewrite eDEX-UI into a web application. eDEX-UI continues to run as an Electron desktop app on a virtual Linux display.
 
 ## Supported Environment
 
@@ -124,4 +124,3 @@ Acceptance criteria:
 - login prompt appears;
 - eDEX UI is visible after login;
 - ports `3000-3006`, `5901`, and `6080` are not LAN-exposed.
-
