@@ -37,6 +37,8 @@
     "postbuild-windows": "rmdir /S /Q prebuild-src",
     "test": "rsync -a --info=progress2 src/ prebuild-src --exclude node_modules && node prebuild-minify.js && cd prebuild-src && npm install && snyk test && cd .. && rm -R prebuild-src",
     "test:linux-service": "bash scripts/test-linux-service-spec.sh",
+    "test:darwin-service": "bash scripts/test-darwin-service-spec.sh",
+    "service-controller-darwin": "electron src/darwin-service-controller.js",
     "init-file-icons": "git submodule update --init",
     "update-file-icons": "git submodule foreach git pull origin master && node file-icons-generator.js"
   },

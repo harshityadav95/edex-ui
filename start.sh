@@ -80,14 +80,32 @@ EOF
 }
 
 main() {
-    need_root_or_reexec "$@"
-
     cd "$REPO_ROOT"
 
-    if [[ ! -x scripts/install-edex-service-linux.sh ]]; then
-        printf 'Missing installer: %s/scripts/install-edex-service-linux.sh\n' "$REPO_ROOT" >&2
-        exit 1
-    fi
+    case "$(uname -s)" in
+        Darwin)
+            if [[ ! -x scripts/install-edex-service-darwin.sh ]]; then
+                printf 'Missing installer: %s/scripts/install-edex-service-darwin.sh\n' "$REPO_ROOT" >&2
+                exit 1
+            fi
+
+            log "building and installing eDEX-UI macOS Screen Sharing/noVNC service"
+            bash scripts/install-edex-service-darwin.sh
+            return
+            ;;
+        Linux)
+            need_root_or_reexec "$@"
+
+            if [[ ! -x scripts/install-edex-service-linux.sh ]]; then
+                printf 'Missing installer: %s/scripts/install-edex-service-linux.sh\n' "$REPO_ROOT" >&2
+                exit 1
+            fi
+            ;;
+        *)
+            printf 'Unsupported platform: %s\n' "$(uname -s)" >&2
+            exit 1
+            ;;
+    esac
 
     log "building and installing eDEX-UI Linux browser/VNC service"
     bash scripts/install-edex-service-linux.sh
