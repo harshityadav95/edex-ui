@@ -108,10 +108,13 @@ assert_file_not_contains .github/workflows/build-binaries.yaml 'pull_request|cre
 assert_file_contains .github/workflows/build-binaries.yaml 'npm ci' 'macOS package workflow must use npm ci'
 assert_file_contains .github/workflows/build-binaries.yaml 'npm run prebuild-darwin' 'macOS package workflow must prepare prebuild-src before Electron Builder'
 assert_file_contains .github/workflows/release-macos-arm64.yml 'npm run prebuild-darwin-arm64' 'macOS arm64 release workflow must prepare prebuild-src before Electron Builder'
+assert_file_contains .github/workflows/build-binaries.yaml '--publish never' 'macOS package workflow must disable implicit Electron Builder publishing'
+assert_file_contains .github/workflows/release-macos-arm64.yml '--publish never' 'macOS release workflow must disable implicit Electron Builder publishing'
 
 for file in .github/workflows/*.yml .github/workflows/*.yaml
 do
     [[ -f "$file" ]] || continue
+    assert_file_contains "$file" 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true' "${file} must opt GitHub JavaScript actions into Node 24"
     assert_file_not_contains "$file" 'node-version: 24' "${file} must use the supported Node 22 line"
     assert_file_not_contains "$file" 'npm install' "${file} must use npm ci for lockfile-consistent installs"
 done
