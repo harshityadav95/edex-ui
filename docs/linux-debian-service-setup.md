@@ -90,7 +90,7 @@ The installer will:
 - install Node.js 22 and required Debian/Ubuntu packages;
 - create the `edex` service user;
 - install source into `/opt/edex-ui`;
-- build eDEX with `npm run install-linux`;
+- build eDEX with `pnpm run install-linux`;
 - install `/etc/edex-ui/edex.env`;
 - install `edex.service`;
 - install Nginx auth and proxy config;

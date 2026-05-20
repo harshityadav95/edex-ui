@@ -105,9 +105,9 @@ pass "CI and docs do not advertise Linux AppImage packaging"
 assert_file_contains .github/workflows/build-binaries.yaml 'workflow_dispatch' 'macOS package workflow must support manual dispatch'
 assert_file_contains .github/workflows/build-binaries.yaml 'tags:' 'macOS package workflow must run from version tags'
 assert_file_not_contains .github/workflows/build-binaries.yaml 'pull_request|create' 'macOS package workflow must not run on PR/create without signing secrets'
-assert_file_contains .github/workflows/build-binaries.yaml 'npm ci' 'macOS package workflow must use npm ci'
-assert_file_contains .github/workflows/build-binaries.yaml 'npm run prebuild-darwin' 'macOS package workflow must prepare prebuild-src before Electron Builder'
-assert_file_contains .github/workflows/release-macos-arm64.yml 'npm run prebuild-darwin-arm64' 'macOS arm64 release workflow must prepare prebuild-src before Electron Builder'
+assert_file_contains .github/workflows/build-binaries.yaml 'pnpm install --frozen-lockfile' 'macOS package workflow must use pnpm install --frozen-lockfile'
+assert_file_contains .github/workflows/build-binaries.yaml 'pnpm run prebuild-darwin' 'macOS package workflow must prepare prebuild-src before Electron Builder'
+assert_file_contains .github/workflows/release-macos-arm64.yml 'pnpm run prebuild-darwin-arm64' 'macOS arm64 release workflow must prepare prebuild-src before Electron Builder'
 assert_file_contains .github/workflows/build-binaries.yaml '--publish never' 'macOS package workflow must disable implicit Electron Builder publishing'
 assert_file_contains .github/workflows/release-macos-arm64.yml '--publish never' 'macOS release workflow must disable implicit Electron Builder publishing'
 
@@ -116,7 +116,11 @@ do
     [[ -f "$file" ]] || continue
     assert_file_contains "$file" 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true' "${file} must opt GitHub JavaScript actions into Node 24"
     assert_file_not_contains "$file" 'node-version: 24' "${file} must use the supported Node 22 line"
-    assert_file_not_contains "$file" 'npm install' "${file} must use npm ci for lockfile-consistent installs"
+    assert_file_not_contains "$file" '(^|[^p])npm install' "${file} must not use npm install"
+    assert_file_not_contains "$file" 'npm ci' "${file} must not use npm ci"
+    if grep -q 'pnpm install' "$file"; then
+        assert_file_contains "$file" 'pnpm install --frozen-lockfile' "${file} must use pnpm install --frozen-lockfile for lockfile-consistent installs"
+    fi
 done
 pass "GitHub Actions match supported build and install policy"
 

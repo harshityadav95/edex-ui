@@ -178,14 +178,19 @@ EOF
 }
 
 start_edex() {
-    require_cmd npm
+    if [[ ! -d "$EDEX_APP_DIR/src" ]]; then
+        log "missing eDEX app directory: ${EDEX_APP_DIR}"
+        exit 1
+    fi
+
+    require_cmd pnpm
     log "starting eDEX-UI from ${EDEX_APP_DIR}"
     cd "$EDEX_APP_DIR"
     export DISPLAY="$EDEX_DISPLAY"
     export HOME="$EDEX_HOME"
     export NODE_ENV="${EDEX_NODE_ENV:-production}"
     write_edex_settings_overrides
-    npm run start -- $EDEX_ELECTRON_FLAGS &
+    pnpm run start -- $EDEX_ELECTRON_FLAGS &
 }
 
 start_kasmvnc() {

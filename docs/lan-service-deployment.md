@@ -7,7 +7,7 @@ This document describes the supported LAN service architecture for eDEX-UI on De
 - Debian 12 or Ubuntu 24.04.
 - systemd service manager.
 - LXD/LXC, Proxmox LXC, VM, or bare-metal Linux.
-- Source-service installation with `npm run install-linux`.
+- Source-service installation with `pnpm run install-linux`.
 - Browser access at `https://<server-ip>:8443/vnc.html?autoconnect=1&resize=remote&path=websockify`.
 - Optional Cloudflare Tunnel access by forwarding local Nginx HTTPS to a public hostname.
 
@@ -138,7 +138,7 @@ The installer performs these actions:
 - installs Debian/Ubuntu packages and Node.js 22 when needed;
 - creates the `edex` service user;
 - copies the source tree to `/opt/edex-ui`;
-- runs `npm run install-linux`;
+- runs `pnpm run install-linux`;
 - installs the systemd unit, runner, checker, and Nginx config;
 - renders Nginx from `/etc/edex-ui/edex.env`;
 - creates the Nginx password file;
@@ -163,5 +163,5 @@ Expected:
 Repo-local deployment contract tests:
 
 ```bash
-npm run test:linux-service
+pnpm run test:linux-service
 ```

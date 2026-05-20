@@ -43,7 +43,7 @@ The installer will:
 
 - install Homebrew dependencies for Node.js and Python;
 - copy the app into `~/Library/Application Support/eDEX-UI-Service/app`;
-- run `npm run install-darwin`;
+- run `pnpm run install-darwin`;
 - install pinned noVNC and websockify;
 - install per-user LaunchAgents;
 - start the menu-bar controller;

@@ -110,7 +110,7 @@ install_app_source() {
 
 build_app() {
     log "building eDEX-UI from source"
-    sudo -u edex -H bash -lc 'cd /opt/edex-ui && npm config set fetch-retries 5 && npm config set fetch-retry-mintimeout 20000 && npm config set fetch-retry-maxtimeout 120000 && npm config set fetch-timeout 300000 && npm run install-linux'
+    sudo -u edex -H bash -lc 'cd /opt/edex-ui && pnpm config set fetch-retries 5 && pnpm config set fetch-retry-mintimeout 20000 && pnpm config set fetch-retry-maxtimeout 120000 && pnpm config set fetch-timeout 300000 && pnpm run install-linux'
 }
 
 install_deployment_files() {
@@ -175,6 +175,10 @@ main() {
         libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 \
         libxshmfence1 libxss1 libxtst6
     install_node22_if_needed
+    if ! command -v pnpm >/dev/null 2>&1; then
+        log "installing pnpm globally"
+        npm install -g pnpm
+    fi
     create_service_user
     install_app_source
     build_app

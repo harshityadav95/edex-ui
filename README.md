@@ -98,7 +98,7 @@ The Linux installer:
 - installs runtime packages for Electron, X11, noVNC, Nginx, and native builds;
 - creates the `edex` service user;
 - copies the app to `/opt/edex-ui`;
-- runs `npm run install-linux`;
+- runs `pnpm run install-linux`;
 - installs `/etc/edex-ui/edex.env`;
 - installs and enables `edex.service`;
 - renders and enables the Nginx HTTPS proxy;
@@ -152,7 +152,7 @@ The macOS installer:
 
 - uses Homebrew for Node.js and Python dependencies;
 - copies the app to `~/Library/Application Support/eDEX-UI-Service/app`;
-- runs `npm run install-darwin`;
+- runs `pnpm run install-darwin`;
 - installs pinned noVNC and websockify;
 - installs per-user LaunchAgents;
 - starts the menu-bar controller;
@@ -345,14 +345,14 @@ On macOS, raw VNC is native Screen Sharing on `127.0.0.1:5900` from the service 
 Install dependencies and native modules for the host platform:
 
 ```bash
-npm run install-linux
-npm run install-darwin
+pnpm run install-linux
+pnpm run install-darwin
 ```
 
 Start the desktop app directly:
 
 ```bash
-npm run start
+pnpm run start
 ```
 
 Direct mode launches Electron locally and does not install the browser/VNC service.
@@ -360,7 +360,7 @@ Direct mode launches Electron locally and does not install the browser/VNC servi
 Build the macOS distributable desktop package:
 
 ```bash
-npm run build-darwin
+pnpm run build-darwin
 ```
 
 On Linux, use `sudo ./start.sh` or `sudo scripts/install-edex-service-linux.sh` to install the Debian/Ubuntu service from source.
@@ -370,7 +370,7 @@ On Linux, use `sudo ./start.sh` or `sudo scripts/install-edex-service-linux.sh` 
 Run the Linux service contract tests:
 
 ```bash
-npm run test:linux-service
+pnpm run test:linux-service
 ```
 
 The Linux tests validate shell script syntax, Nginx template rendering, URL output, service defaults, and the loopback-only backend contract.
@@ -378,7 +378,7 @@ The Linux tests validate shell script syntax, Nginx template rendering, URL outp
 Run the macOS service contract tests:
 
 ```bash
-npm run test:darwin-service
+pnpm run test:darwin-service
 ```
 
 The macOS tests validate shell script syntax, LaunchAgent template rendering, URL output, service control commands, and the menu-bar controller entry point.

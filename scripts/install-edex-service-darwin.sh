@@ -50,7 +50,7 @@ ensure_homebrew() {
 }
 
 install_brew_dependencies() {
-    local packages=(node python)
+    local packages=(node pnpm python)
     log "installing Homebrew dependencies: ${packages[*]}"
     brew install "${packages[@]}"
 }
@@ -95,11 +95,11 @@ install_app_source() {
 build_app() {
     log "building eDEX-UI for macOS"
     cd "$EDEX_APP_DIR"
-    npm config set fetch-retries 5
-    npm config set fetch-retry-mintimeout 20000
-    npm config set fetch-retry-maxtimeout 120000
-    npm config set fetch-timeout 300000
-    npm run install-darwin
+    pnpm config set fetch-retries 5
+    pnpm config set fetch-retry-mintimeout 20000
+    pnpm config set fetch-retry-maxtimeout 120000
+    pnpm config set fetch-timeout 300000
+    pnpm run install-darwin
 }
 
 install_websockify() {
